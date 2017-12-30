@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 
 using Ditch;
-
 using Newtonsoft.Json;
+using RestSharp;
 
 using EmojiBot.Models;
+using EmojiBot.Models.YouTube;
 
 namespace EmojiBot.Managers
 {
@@ -68,6 +69,36 @@ namespace EmojiBot.Managers
             var reputation = result.AuthorReputation;
             Money promoted = result.Promoted;
             DtubeRoot jsonMetaData = JsonConvert.DeserializeObject<DtubeRoot>(result.JsonMetadata);
+            string title = jsonMetaData.video.info.title;
+            string description = jsonMetaData.video.content.description;
+            double duration = jsonMetaData.video.info.duration;
+
+            double findInYouTube = ScoreFindInYouTube(title, description, duration);
+        }
+
+        public static double ScoreFindInYouTube(string title, string description, double duration)
+        {
+            var client = new RestClient("https://www.googleapis.com/youtube/v3/");
+            
+            var request = new RestRequest("search", Method.GET);
+            request.AddQueryParameter("part", "snippet");
+            request.AddQueryParameter("q", title);
+            request.AddQueryParameter("type", "video");
+            request.AddQueryParameter("maxResults", "1");
+            request.AddQueryParameter("fields", "items(snippet(publishedAt,title,description))");
+            request.AddQueryParameter("key", ConfigurationManager.YouTubeApiKey);
+
+            IRestResponse response = client.Execute(request);
+
+            YouTubeRoot resp = JsonConvert.DeserializeObject<YouTubeRoot>(response.Content);
+            
+            //todo match title, duration and description
+
+
+            //todo vérification date publication du jour, nb de vue basse... pseudo identique
+            
+
+            return 1d;
         }
     }
 }
