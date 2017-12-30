@@ -16,20 +16,19 @@ namespace EmojiBot
     {
         public static void Main(string[] args)
         {
+            var builder = new ConfigurationBuilder() // Begin building the configuration file
+                .SetBasePath(AppContext.BaseDirectory) // Specify the location of the config
+                .AddJsonFile("_configuration.json"); // Add the configuration file
+            var config = builder.Build(); // Build the configuration file
+            ConfigurationManager.Init(config);
+
             //VideoAnalyser.AnalyzeSteemContent("fran41691", "5mb8pa5g");
             VideoAnalyser.AnalyzeSteemContent("dragoreznov", "dxculcy2"); //doublon youtube
             //new Program().StartAsync().GetAwaiter().GetResult();
         }
 
-        private IConfigurationRoot _config;
-
         public async Task StartAsync()
         {
-            var builder = new ConfigurationBuilder() // Begin building the configuration file
-                .SetBasePath(AppContext.BaseDirectory) // Specify the location of the config
-                .AddJsonFile("_configuration.json"); // Add the configuration file
-            _config = builder.Build(); // Build the configuration file
-
             var services = new ServiceCollection() // Begin building the service provider
                 .AddSingleton(new DiscordSocketClient(new DiscordSocketConfig // Add the discord client to the service provider
                     {
@@ -44,8 +43,7 @@ namespace EmojiBot
                 .AddSingleton<CommandHandler>() // Add remaining services to the provider
                 .AddSingleton<LoggingService>()
                 .AddSingleton<StartupService>()
-                .AddSingleton<Random>() // You get better random with a single instance than by creating a new one every time you need it
-                .AddSingleton(_config);
+                .AddSingleton<Random>(); // You get better random with a single instance than by creating a new one every time you need it
 
             var provider = services.BuildServiceProvider(); // Create the service provider
 
