@@ -21,11 +21,6 @@ namespace EmojiBot
         public static void Main(string[] args)
         {
             new Program().StartAsync().Wait();
-
-            //var result = VideoAnalyser.AnalyzeDiscordContent(@"te
-//https://d.tube/#!/v/shaunonsite/tdybthrb").Result;
-            //var result = VideoAnalyser.AnalyzeSteemContent("fran41691", "5mb8pa5g").Result;
-            //var result = VideoAnalyser.AnalyzeSteemContent("dragoreznov", "dxculcy2").Result; //doublon youtube
         }
 
         public async Task StartAsync()
@@ -43,12 +38,14 @@ namespace EmojiBot
                 .AddSingleton<ConfigurationManager>()
                 .AddSingleton<StartupService>();
 
-            IServiceProvider provider = services.BuildServiceProvider(); // Create the service provider
+            // Create the service provider
+            IServiceProvider provider = services.BuildServiceProvider();
 
-            // Initialize the logging service, startup service, and command handler
+            // Start Discord, steem ...
             await provider.GetRequiredService<StartupService>().StartAsync();
 
-            await Task.Delay(-1); // Prevent the application from closing
+            // Prevent the application from closing
+            await Task.Delay(-1);
         }
     }
 }

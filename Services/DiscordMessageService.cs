@@ -24,8 +24,7 @@ namespace EmojiBot.Services
         private readonly DiscordSocketClient _discordClient;
         private readonly VideoAnalyserService _videoAnalyser;
         private readonly ConfigurationManager _configurationManager;
-
-        public ISocketMessageChannel OutputChannel { get; set; }
+        private ISocketMessageChannel _outputMessageChannel;
 
         public DiscordMessageService(DiscordSocketClient discordClient, 
             VideoAnalyserService videoAnalyser, 
@@ -41,9 +40,9 @@ namespace EmojiBot.Services
 
         private async Task DiscordReady()
         {
-            SocketChannel t = _discordClient.GetChannel(_configurationManager.DiscordChannelIdOut);
-            OutputChannel = t as ISocketMessageChannel;
-            await Console.Out.WriteLineAsync("DiscordOutputChannel : " + OutputChannel.Name);
+            SocketChannel socketChannel = _discordClient.GetChannel(_configurationManager.DiscordChannelIdOut);
+            _outputMessageChannel = socketChannel as ISocketMessageChannel;
+            await Console.Out.WriteLineAsync("DiscordOutputChannel : " + _outputMessageChannel?.Name);
         }
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
@@ -53,24 +52,30 @@ namespace EmojiBot.Services
             if (msg == null)
                 return;
 
-            // si c'est un message venant de l'auteur et du channel désiré
+            // si c'est un message venant du bot et du channel désiré
             if (msg.Author.IsBot && msg.Author.Id == _configurationManager.DiscordAuthorId && msg.Channel.Id == _configurationManager.DiscordChannelIdIn)
             {
                 await Console.Out.WriteLineAsync("Discord receive message : " + msg.Content);
-                // ici on est avec un message du dtube bot dans le channel links
-                string message = await _videoAnalyser.AnalyzeDiscordContent(msg.Content);
-                await SendMessageAsync(message);
+                List<string> videoMessages = await _videoAnalyser.AnalyzeFromDiscordBotMessage(msg.Content);
+                videoMessages.ForEach(async videoMessage => await SendMessageAsync(videoMessage));
+            }
+
+            // si c'est un message venant d'un utilisateur et du channel désiré
+            else if (!msg.Author.IsBot && msg.Channel.Id == _configurationManager.DiscordChannelIdIn)
+            {
+                await Console.Out.WriteLineAsync("Discord receive message : " + msg.Content);
+                List<string> videoMessages = await _videoAnalyser.AnalyzeFromDiscordUserMessage(msg.Content);
+                videoMessages.ForEach(async videoMessage => await SendMessageAsync(videoMessage));
             }
         }
 
         private async Task SendMessageAsync(string message)
         {
-            // publier sur discord
-            if(OutputChannel != null)
-            {
-                await Console.Out.WriteLineAsync("Discord send message : " + message);
-                await OutputChannel.SendMessageAsync(message);
-            }
+            if(_outputMessageChannel == null || string.IsNullOrWhiteSpace(message))
+                return;
+            
+            await Console.Out.WriteLineAsync("Discord send message : " + message);
+            await _outputMessageChannel.SendMessageAsync(message);            
         }
     }
 }

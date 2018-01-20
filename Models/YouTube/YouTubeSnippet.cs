@@ -12,6 +12,12 @@ namespace EmojiBot.Models.YouTube
         [DeserializeAs(Name = "description")]
         public string Description { get; set; }
 
+        [DeserializeAs(Name = "channelTitle")]
+        public string ChannelTitle { get; set; }
+
+        [DeserializeAs(Name = "channelId")]
+        public string ChannelId { get; set; }
+
         [DeserializeAs(Name = "publishedAt")]
         public DateTime PublishedAt { get; set; }
     }

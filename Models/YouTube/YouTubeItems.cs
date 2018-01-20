@@ -6,5 +6,8 @@ namespace EmojiBot.Models.YouTube
     {
         [DeserializeAs(Name = "snippet")]
         public YouTubeSnippet Snippet { get; set; }
+
+        [DeserializeAs(Name = "id")]
+        public YouTubeId Id  { get; set; }
     }
 }
