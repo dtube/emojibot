@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 using EmojiBot.Managers;
+using System.IO;
 
 namespace EmojiBot.Services
 {
@@ -61,12 +62,12 @@ namespace EmojiBot.Services
             }
 
             // si c'est un message venant d'un utilisateur et du channel désiré
-            else if (!msg.Author.IsBot && msg.Channel.Id == _configurationManager.DiscordChannelIdIn)
+            /*else if (!msg.Author.IsBot && msg.Channel.Id == _configurationManager.DiscordChannelIdIn)
             {
                 await Console.Out.WriteLineAsync("Discord receive message : " + msg.Content);
                 List<string> videoMessages = await _videoAnalyser.AnalyzeFromDiscordUserMessage(msg.Content);
                 videoMessages.ForEach(async videoMessage => await SendMessageAsync(videoMessage));
-            }
+            }*/
         }
 
         private async Task SendMessageAsync(string message)
@@ -75,7 +76,10 @@ namespace EmojiBot.Services
                 return;
             
             await Console.Out.WriteLineAsync("Discord send message : " + message);
-            await _outputMessageChannel.SendMessageAsync(message);            
+            await _outputMessageChannel.SendMessageAsync(message);
+
+            string filePath = Path.Combine(AppContext.BaseDirectory, "logs", "scoring.csv");
+            await File.AppendAllLinesAsync(filePath, new[]{ message });
         }
     }
 }

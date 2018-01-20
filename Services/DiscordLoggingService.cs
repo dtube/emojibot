@@ -28,7 +28,7 @@ namespace EmojiBot.Services
             _discord.Log += OnLogAsync;
         }
 
-        private Task OnLogAsync(LogMessage msg)
+        private async Task OnLogAsync(LogMessage msg)
         {
             // Create the log directory if it doesn't exist
             if (!Directory.Exists(_logDirectory))
@@ -39,10 +39,10 @@ namespace EmojiBot.Services
 
             string logText = $"{DateTime.UtcNow.ToString("hh:mm:ss")} [{msg.Severity}] {msg.Source}: {msg.Exception?.ToString() ?? msg.Message}";
             // Write the log text to a file
-            File.AppendAllText(_logFile, logText + "\n");
+            await File.AppendAllTextAsync(_logFile, logText + "\n");
 
             // Write the log text to the console
-            return Console.Out.WriteLineAsync(logText);
+            await Console.Out.WriteLineAsync(logText);
         }
     }
 }

@@ -15,6 +15,7 @@ using Ditch;
 using Ditch.Operations.Get;
 using Ditch.Errors;
 using Ditch.JsonRpc;
+using System.IO;
 
 namespace EmojiBot.Services
 {
@@ -58,7 +59,6 @@ namespace EmojiBot.Services
             {
                 //string title = messages[i]; //1ère ligne
                 string url = messages[i + 1]; //2e ligne
-
                 output.Add(await AnalyzeFromDtubeUrl(url));
             }
             return output;
@@ -110,16 +110,24 @@ namespace EmojiBot.Services
             Money promoted = result.Promoted;
             DtubeRoot jsonMetaData = JsonConvert.DeserializeObject<DtubeRoot>(result.JsonMetadata);
 
-            if(jsonMetaData?.video == null)
-                return "N'est pas une vidéo dtube";
+            if(jsonMetaData == null)
+                return "jsonMetaData est vide";
+            if(jsonMetaData.video == null)
+                return "jsonMetaData?.video est vide";
 
             string steemTitle = jsonMetaData.video.info.title;
             string steemDescription = jsonMetaData.video.content.description;
-            double steemDuration = jsonMetaData.video.info.duration;
+            double steemDuration = jsonMetaData.video.info.duration??-1;
+            
+            Money curatorPayoutValue = result.CuratorPayoutValue;
+            object authorRewards = result.AuthorRewards;
+            Money pendingPayoutValue = result.PendingPayoutValue;
+            Money totalPayoutValue = result.TotalPayoutValue;
 
             string youTubeInfo = await AnalyzeFromYouTubeSearchAPI(steemTitle, steemDescription, steemDuration, author);
+            return youTubeInfo + ";" + totalPayoutValue.Value;
 
-            string steemShortDescription = steemDescription.Length > 500 ? steemDescription.Substring(0, 500) + "..." : steemDescription;
+            /*string steemShortDescription = steemDescription.Length > 500 ? steemDescription.Substring(0, 500) + "..." : steemDescription;
             string steemInfo = $@"Informations provenant de steem avec https://d.tube/#!/v/{author}/{permLink} :
 Titre : {steemTitle}
 Durée vidéo : {steemDuration}";
@@ -128,7 +136,7 @@ Durée vidéo : {steemDuration}";
 >{steemInfo}
 =============================
 >{youTubeInfo}
-=============================";
+=============================";*/
         }
 
         public async Task<string> AnalyzeFromYouTubeSearchAPI(string steemTitle, string steemDescription, double steemDuration, string steemAuthor)
@@ -146,6 +154,9 @@ Durée vidéo : {steemDuration}";
             IRestResponse response = await client.ExecuteTaskAsync(request);
 
             YouTubeRoot resp = JsonConvert.DeserializeObject<YouTubeRoot>(response.Content);
+            if(resp == null || resp.Items.Length == 0)
+                return "-1;-1;-1";
+
             YouTubeSnippet video = resp.Items[0].Snippet;
             YouTubeId id = resp.Items[0].Id;
 
@@ -154,13 +165,15 @@ Durée vidéo : {steemDuration}";
 
             // similitudes
             var jw = new JaroWinkler();
-            string distanceTitle = (jw.Similarity(steemTitle, video.Title)*100).ToString().Substring(0, 5)+"%";
-            string distanceDescription = (jw.Similarity(steemDescription, video.Description)*100).ToString().Substring(0, 5)+"%";
-            string distanceAuthor = (jw.Similarity(steemAuthor, video.ChannelTitle)*100).ToString().Substring(0, 5)+"%";
+            string distanceTitle = FormatScore(jw.Similarity(steemTitle, video.Title));
+            string distanceDescription = FormatScore(jw.Similarity(steemDescription, video.Description));
+            string distanceAuthor = FormatScore(jw.Similarity(steemAuthor, video.ChannelTitle));
+
+            return $"{distanceTitle};{distanceDescription};{distanceAuthor}";
 
             // todo vérification date publication du jour, nb de vue basse, duration, date création compte ... pseudo identique
 
-            string youtubeShortDescription = video.Description.Length > 500 ? video.Description.Substring(0, 500) + "..." : video.Description;
+            /*string youtubeShortDescription = video.Description.Length > 500 ? video.Description.Substring(0, 500) + "..." : video.Description;
 
             return $@"Information provenant de Youtube (1ère video youtube trouvée) avec le titre provenant de steem :
 VideoUrl : {videoUrl}
@@ -170,7 +183,15 @@ Auteur : {video.ChannelTitle}
 =============================
 Similitude Titre : {distanceTitle}
 Similitude Description : {distanceDescription}
-Similitude Auteur : {distanceAuthor}";
+Similitude Auteur : {distanceAuthor}";*/
+        }
+
+        private string FormatScore(double score)
+        {
+            string percent = score.ToString();
+            if(percent.Length > 6)
+                percent = percent.Substring(0, 6);
+            return percent;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace EmojiBot.Models
 
         public string permlink { get; set; }
 
-        public double duration { get; set; }
+        public double? duration { get; set; }
 
         public long filesize { get; set; }
 
