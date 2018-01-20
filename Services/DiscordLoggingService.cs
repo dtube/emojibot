@@ -8,10 +8,9 @@ using Discord.WebSocket;
 
 namespace EmojiBot.Services
 {
-    public class LoggingService
+    public class DiscordLoggingService
     {
         private readonly DiscordSocketClient _discord;
-        private readonly CommandService _commands;
 
         private string _logDirectory
         {
@@ -21,15 +20,12 @@ namespace EmojiBot.Services
         private string _logFile => Path.Combine(_logDirectory, $"{DateTime.UtcNow.ToString("yyyy-MM-dd")}.log");
 
         // DiscordSocketClient and CommandService are injected automatically from the IServiceProvider
-        public LoggingService(DiscordSocketClient discord, CommandService commands)
+        public DiscordLoggingService(DiscordSocketClient discord)
         {
             _logDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
 
             _discord = discord;
-            _commands = commands;
-
             _discord.Log += OnLogAsync;
-            _commands.Log += OnLogAsync;
         }
 
         private Task OnLogAsync(LogMessage msg)

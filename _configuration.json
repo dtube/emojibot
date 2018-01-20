@@ -1,7 +1,11 @@
 {
 	"discord": {
-		"token": "...",
-		"channelId": "...",
-		"authorId": "..."
+		"token": "AAA",
+		"channelId": 111,
+		"authorId": 222,
+		"channelIdOut": 333
+	},
+	"youTube": {
+		"apiKey": "BBB"
 	}
 }
