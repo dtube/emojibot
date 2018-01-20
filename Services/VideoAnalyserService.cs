@@ -122,14 +122,13 @@ namespace EmojiBot.Services
             string steemShortDescription = steemDescription.Length > 500 ? steemDescription.Substring(0, 500) + "..." : steemDescription;
             string steemInfo = $@"Informations provenant de steem avec https://d.tube/#!/v/{author}/{permLink} :
 Titre : {steemTitle}
-Durée vidéo : {steemDuration}
-Description : {steemShortDescription}";
+Durée vidéo : {steemDuration}";
 
-            return $@"{steemInfo}
-
+            return $@"=============================
+>{steemInfo}
 =============================
-
-{youTubeInfo}";
+>{youTubeInfo}
+=============================";
         }
 
         public async Task<string> AnalyzeFromYouTubeSearchAPI(string steemTitle, string steemDescription, double steemDuration, string steemAuthor)
@@ -159,7 +158,7 @@ Description : {steemShortDescription}";
             string distanceDescription = (jw.Similarity(steemDescription, video.Description)*100).ToString().Substring(0, 5)+"%";
             string distanceAuthor = (jw.Similarity(steemAuthor, video.ChannelTitle)*100).ToString().Substring(0, 5)+"%";
 
-            //todo vérification date publication du jour, nb de vue basse, duration, date création compte ... pseudo identique
+            // todo vérification date publication du jour, nb de vue basse, duration, date création compte ... pseudo identique
 
             string youtubeShortDescription = video.Description.Length > 500 ? video.Description.Substring(0, 500) + "..." : video.Description;
 
@@ -167,11 +166,8 @@ Description : {steemShortDescription}";
 VideoUrl : {videoUrl}
 Titre : {video.Title}
 Publié le : {video.PublishedAt}
-ChannelUrl : {channelUrl}
-Description : {youtubeShortDescription}
-
+Auteur : {video.ChannelTitle}
 =============================
-
 Similitude Titre : {distanceTitle}
 Similitude Description : {distanceDescription}
 Similitude Auteur : {distanceAuthor}";
