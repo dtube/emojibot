@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 using RestSharp;
+using F23.StringSimilarity;
 
 using EmojiBot.Models;
 using EmojiBot.Models.YouTube;
@@ -111,12 +112,12 @@ namespace EmojiBot.Services
 
             if(jsonMetaData?.video == null)
                 return "N'est pas une vidéo dtube";
-                
+
             string steemTitle = jsonMetaData.video.info.title;
             string steemDescription = jsonMetaData.video.content.description;
             double steemDuration = jsonMetaData.video.info.duration;
 
-            string youTubeInfo = await AnalyzeFromYouTubeSearchAPI(steemTitle, steemDescription, steemDuration);
+            string youTubeInfo = await AnalyzeFromYouTubeSearchAPI(steemTitle, steemDescription, steemDuration, author);
 
             string steemShortDescription = steemDescription.Length > 500 ? steemDescription.Substring(0, 500) + "..." : steemDescription;
             string steemInfo = $@"Informations provenant de steem avec https://d.tube/#!/v/{author}/{permLink} :
@@ -131,7 +132,7 @@ Description : {steemShortDescription}";
 {youTubeInfo}";
         }
 
-        public async Task<string> AnalyzeFromYouTubeSearchAPI(string steemTitle, string steemDescription, double steemDuration)
+        public async Task<string> AnalyzeFromYouTubeSearchAPI(string steemTitle, string steemDescription, double steemDuration, string steemAuthor)
         {
             var client = new RestClient("https://www.googleapis.com/youtube/v3/");
             
@@ -152,19 +153,21 @@ Description : {steemShortDescription}";
             string videoUrl = "https://www.youtube.com/watch?v=" + id.VideoId;
             string channelUrl = "https://www.youtube.com/channel/" + video.ChannelId;
 
-            //todo match title et description
-            var distanceTitle = "";
-            var distanceDescription = "";
-            var distanceAuthor = ""; // video.ChannelTitle
+            // similitudes
+            var jw = new JaroWinkler();
+            string distanceTitle = (jw.Similarity(steemTitle, video.Title)*100).ToString().Substring(0, 5)+"%";
+            string distanceDescription = (jw.Similarity(steemDescription, video.Description)*100).ToString().Substring(0, 5)+"%";
+            string distanceAuthor = (jw.Similarity(steemAuthor, video.ChannelTitle)*100).ToString().Substring(0, 5)+"%";
 
             //todo vérification date publication du jour, nb de vue basse, duration, date création compte ... pseudo identique
 
             string youtubeShortDescription = video.Description.Length > 500 ? video.Description.Substring(0, 500) + "..." : video.Description;
 
             return $@"Information provenant de Youtube (1ère video youtube trouvée) avec le titre provenant de steem :
-Url : TODO
+VideoUrl : {videoUrl}
 Titre : {video.Title}
 Publié le : {video.PublishedAt}
+ChannelUrl : {channelUrl}
 Description : {youtubeShortDescription}
 
 =============================
