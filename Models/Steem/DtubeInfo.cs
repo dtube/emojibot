@@ -12,7 +12,7 @@ namespace EmojiBot.Models
 
         public double? duration { get; set; }
 
-        public long filesize { get; set; }
+        public long? filesize { get; set; }
 
         public string spritehash { get; set; }
     }

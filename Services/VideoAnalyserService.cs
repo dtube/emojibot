@@ -113,7 +113,7 @@ namespace EmojiBot.Services
             if(jsonMetaData == null)
                 return "jsonMetaData est vide";
             if(jsonMetaData.video == null)
-                return "jsonMetaData?.video est vide";
+                return "jsonMetaData.video est vide";
 
             string steemTitle = jsonMetaData.video.info.title;
             string steemDescription = jsonMetaData.video.content.description;
