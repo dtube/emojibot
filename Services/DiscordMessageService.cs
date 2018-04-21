@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,7 +17,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 using EmojiBot.Managers;
-using System.IO;
 
 namespace EmojiBot.Services
 {
@@ -25,7 +25,7 @@ namespace EmojiBot.Services
         private readonly DiscordSocketClient _discordClient;
         private readonly VideoAnalyserService _videoAnalyser;
         private readonly ConfigurationManager _configurationManager;
-        private ISocketMessageChannel _outputMessageChannel;
+        private static ISocketMessageChannel _outputMessageChannel;
 
         public DiscordMessageService(DiscordSocketClient discordClient, 
             VideoAnalyserService videoAnalyser, 
@@ -53,33 +53,31 @@ namespace EmojiBot.Services
             if (msg == null)
                 return;
 
-            // si c'est un message venant du bot et du channel désiré
-            if (msg.Author.IsBot && msg.Author.Id == _configurationManager.DiscordAuthorId && msg.Channel.Id == _configurationManager.DiscordChannelIdIn)
-            {
-                await Console.Out.WriteLineAsync("Discord receive message : " + msg.Content);
-                List<string> videoMessages = await _videoAnalyser.AnalyzeFromDiscordBotMessage(msg.Content);
-                videoMessages.ForEach(async videoMessage => await SendMessageAsync(videoMessage));
-            }
+            // si ça vient d'un autre channel, ne pas prendre en compte
+            if(msg.Channel.Id != _configurationManager.DiscordChannelIdIn || msg.Author.IsBot)
+                return;
 
-            // si c'est un message venant d'un utilisateur et du channel désiré
-            /*else if (!msg.Author.IsBot && msg.Channel.Id == _configurationManager.DiscordChannelIdIn)
-            {
-                await Console.Out.WriteLineAsync("Discord receive message : " + msg.Content);
-                List<string> videoMessages = await _videoAnalyser.AnalyzeFromDiscordUserMessage(msg.Content);
-                videoMessages.ForEach(async videoMessage => await SendMessageAsync(videoMessage));
-            }*/
+            if(!msg.Content.StartsWith("!"))
+                return;
+
+            string message = await _videoAnalyser.AnalyzeFromDiscordUserMessage(msg.Content);
+            await SendMessageAsync(message);
         }
 
-        private async Task SendMessageAsync(string message)
+        public static async Task SendMessageAsync(string message)
         {
             if(_outputMessageChannel == null || string.IsNullOrWhiteSpace(message))
                 return;
             
             await Console.Out.WriteLineAsync("Discord send message : " + message);
-            await _outputMessageChannel.SendMessageAsync(message);
-
-            string filePath = Path.Combine(AppContext.BaseDirectory, "logs", "scoring.csv");
-            await File.AppendAllLinesAsync(filePath, new[]{ message });
+            try
+            {
+                await _outputMessageChannel.SendMessageAsync(message);
+            }
+            catch
+            {
+                //todo log
+            }
         }
     }
 }

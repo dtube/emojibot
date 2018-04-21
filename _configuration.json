@@ -1,9 +1,9 @@
 {
 	"discord": {
-		"token": "AAA",
-		"channelId": 111,
-		"authorId": 222,
-		"channelIdOut": 333
+        "token": "AAA",
+        "channelIdIn": 111,
+		"channelIdOut": 222,
+		"curatorId": 333
 	},
 	"youTube": {
 		"apiKey": "BBB"

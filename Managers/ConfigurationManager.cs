@@ -32,11 +32,11 @@ namespace EmojiBot.Managers
                 throw new ArgumentException("Please enter your channel's id into the `_configuration.json` file found in the applications root directory.");
             DiscordChannelIdOut = Convert.ToUInt64(channelIdOut);
 
-            // Get the discord authorId from the config file
-            string authorId = config["discord:authorId"];
-            if (string.IsNullOrWhiteSpace(authorId))
-                throw new ArgumentException("Please enter your author's id into the `_configuration.json` file found in the applications root directory.");
-            DiscordAuthorId = Convert.ToUInt64(authorId);
+            // Get the steem curatorId from the config file
+            string curatorId = config["discord:curatorId"];
+            if (string.IsNullOrWhiteSpace(curatorId))
+                throw new ArgumentException("Please enter your curator's id into the `_configuration.json` file found in the applications root directory.");
+            SteemCuratorId = Convert.ToUInt64(curatorId);
 
             // Get the apiyoutubekey from the config file
             string youTubeApiKey = config["youTube:apiKey"];
@@ -51,7 +51,7 @@ namespace EmojiBot.Managers
 
         public ulong DiscordChannelIdOut { get; private set; }
 
-        public ulong DiscordAuthorId { get; private set; }
+        public ulong SteemCuratorId { get; private set; }
 
         public string YouTubeApiKey { get; private set; }
     }
