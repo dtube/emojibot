@@ -88,6 +88,7 @@ namespace EmojiBot.Services
                 return "Error: Message is empty";
 
             string url = null;
+            string warnings = "";
             bool isVote = false;
             if(videoMessage.StartsWith("!vote "))
             {
@@ -120,20 +121,25 @@ namespace EmojiBot.Services
             if(!steemInfo.Success)
                 return "Error: Could not fetch STEEM content";
             YoutubeDTO youtubeInfo = await GetInfoFromYouTubeSearchAPI(steemInfo.Title, steemInfo.Description, steemInfo.Duration, steemInfo.Author);
-            if(!youtubeInfo.Success)
-                return "Error: Could not fetch YT Content";
+            if(!youtubeInfo.Success) {
+                await Console.Out.WriteLineAsync("Error fetching YT for: " + url);
+                warnings += "\nWarning: YT error";
+                //return "Error: Could not fetch YT Content";
+                //je prefere que ca ne bloque pas dans ce cas, je met un systeme de warning
+            }
+                
 
             // si plaggiat
             if((youtubeInfo.DistanceTitle + youtubeInfo.DistanceDescription) > 1.2 && (DateTime.Now - youtubeInfo.PublishedAt).TotalDays > 8)
             {
-                return "**PLAGIARISM DETECTED**, there will be no vote";
+                return "**PLAGIARISM DETECTED**, there will be no vote. " + youtubeInfo.VideoUrl;
             }
 
-            bool alertPlaggiat = false;
             // si suspection de plaggiat
             if((youtubeInfo.DistanceTitle + youtubeInfo.DistanceDescription) > 0.6 && (DateTime.Now - youtubeInfo.PublishedAt).TotalDays > 1)
             {
-                alertPlaggiat = true;
+                warnings += "\nWarning: Check for plagiarism: ";
+                warnings += youtubeInfo.VideoUrl;
             }
 
             DateTime creationDate = DateTime.SpecifyKind(steemInfo.Created, DateTimeKind.Utc);
@@ -158,11 +164,14 @@ namespace EmojiBot.Services
             else
                 dtubeVideoDTO.NbDownVote++;
 
-            string messagePlagiat = alertPlaggiat ? "*Please check for plagiarism: *" : "";
             if(dtubeVideoDTO.NbDownVote > 0 && dtubeVideoDTO.NbUpVote == 0)
-                return $"{messagePlagiat} Downvote for " + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString();
+                return $"Downvote for " 
+                    + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString()
+                    + warnings;
             if(dtubeVideoDTO.NbUpVote > 0 && dtubeVideoDTO.NbDownVote == 0)
-                return $"{messagePlagiat} Vote for " + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString();
+                return $"Vote for " 
+                    + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString()
+                    + warnings;
 
             _dicoVote.Remove(url);
             return "**Curator disagreament**. There will be no vote";
