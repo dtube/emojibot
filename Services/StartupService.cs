@@ -48,18 +48,18 @@ namespace EmojiBot.Services
             var steem = new List<string>
             {
                 //"wss://steemd.steemit.com",       //ko
-                //"wss://steemd.privex.io",         //ko
-                "wss://steemd.steemitstage.com",  //ok
+                "wss://steemd.privex.io",         //ko
+                //"wss://steemd.steemitstage.com",  //ok
                 //"wss://steemd.steemitdev.com",    //ko
-                "wss://rpc.steemliberator.com",   //ok
+                //"wss://rpc.steemliberator.com",   //ok
                 //"wss://steemd.minnowsupportproject.org", //ko
-                "wss://rpc.buildteam.io",         //ok
-                "wss://steemd.pevo.science",      //ok
+                //"wss://rpc.buildteam.io",         //ok
+                //"wss://steemd.pevo.science",      //ok
                 //"wss://steemd.steemgigs.org",     //ko
                 //"wss://gtg.steem.house",          //ko
-                "wss://rpc.steemviz.com",         //ok
-                "wss://seed.bitcoiner.me",        //ok
-                "wss://steemd-int.steemit.com",     //ok
+                //"wss://rpc.steemviz.com",         //ok
+                //"wss://seed.bitcoiner.me",        //ok
+                //"wss://steemd-int.steemit.com",     //ok
                 //"wss://",
             };
 

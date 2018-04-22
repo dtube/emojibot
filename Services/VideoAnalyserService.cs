@@ -123,7 +123,7 @@ namespace EmojiBot.Services
             YoutubeDTO youtubeInfo = await GetInfoFromYouTubeSearchAPI(steemInfo.Title, steemInfo.Description, steemInfo.Duration, steemInfo.Author);
             if(!youtubeInfo.Success) {
                 await Console.Out.WriteLineAsync("Error fetching YT for: " + url);
-                warnings += "\nWarning: YT error";
+                warnings += "\nWarning! YT error";
                 //return "Error: Could not fetch YT Content";
                 //je prefere que ca ne bloque pas dans ce cas, je met un systeme de warning
             }
@@ -138,7 +138,7 @@ namespace EmojiBot.Services
             // si suspection de plaggiat
             if((youtubeInfo.DistanceTitle + youtubeInfo.DistanceDescription) > 0.6 && (DateTime.Now - youtubeInfo.PublishedAt).TotalDays > 1)
             {
-                warnings += "\nWarning: Check for plagiarism: ";
+                warnings += "\nWarning! Possible plagiarism: ";
                 warnings += youtubeInfo.VideoUrl;
             }
 
@@ -149,7 +149,6 @@ namespace EmojiBot.Services
                 DateTime afterVote = DateTime.UtcNow.AddMinutes(5);
                 DateTime afterCreationVideo = creationDate.AddMinutes(30);
                 DateTime voteDateTime = afterCreationVideo > afterVote && isVote ? afterCreationVideo : afterVote; //on prend le max des 2
-
                 _dicoVote.Add(url, new DtubeVideoDTO
                 { 
                     Url = url, 
@@ -159,18 +158,19 @@ namespace EmojiBot.Services
             }
 
             DtubeVideoDTO dtubeVideoDTO = _dicoVote[url];
+            TimeSpan voteTimeSpan = (dtubeVideoDTO.VoteDateTime - DateTime.Now.ToUniversalTime());
             if(isVote)
                 dtubeVideoDTO.NbUpVote++;
             else
                 dtubeVideoDTO.NbDownVote++;
 
             if(dtubeVideoDTO.NbDownVote > 0 && dtubeVideoDTO.NbUpVote == 0)
-                return $"Downvote for " 
-                    + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString()
+                return $"Downvote in " 
+                    + Math.Round(voteTimeSpan.TotalMinutes) + "mins"
                     + warnings;
             if(dtubeVideoDTO.NbUpVote > 0 && dtubeVideoDTO.NbDownVote == 0)
-                return $"Vote for " 
-                    + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString()
+                return $"Vote in " 
+                    + Math.Round(voteTimeSpan.TotalMinutes) + "mins"
                     + warnings;
 
             _dicoVote.Remove(url);
