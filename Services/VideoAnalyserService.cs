@@ -85,7 +85,7 @@ namespace EmojiBot.Services
         public async Task<string> AnalyzeFromDiscordUserMessage(string videoMessage)
         {
             if(string.IsNullOrWhiteSpace(videoMessage))
-                return "Erreur : Le message est vide";
+                return "Error: Message is empty";
 
             string url = null;
             bool isVote = false;
@@ -102,10 +102,10 @@ namespace EmojiBot.Services
                 await Console.Out.WriteLineAsync("Discord receive downvote for : " + url);
             }
             else
-                return "Erreur : Commande !vote ou !downvote non détectée";
+                return "Error: Unknown Command";
 
             if(string.IsNullOrWhiteSpace(url))
-                return "Erreur : Pas d'url détectée dans le message";
+                return "Error: No url found";
 
             Tuple<string, string> tuple = null;
             if (url.StartsWith("https://d.tube/"))
@@ -114,19 +114,19 @@ namespace EmojiBot.Services
                 tuple = ExtractAuthorAndPermLinkFromSteemitUrl(url);
             
             if(tuple == null)
-                return "Erreur : L'url ne correspond pas à une url DTube ou Steemit";
+                return "Error: URL needs to start with either d.tube or steemit.com";
             
             SteemDTO steemInfo = GetInfoFromSteem(tuple.Item1, tuple.Item2);
             if(!steemInfo.Success)
-                return "Erreur : lors de la récupération des informations prevenant de steem";
+                return "Error: Could not fetch STEEM content";
             YoutubeDTO youtubeInfo = await GetInfoFromYouTubeSearchAPI(steemInfo.Title, steemInfo.Description, steemInfo.Duration, steemInfo.Author);
             if(!youtubeInfo.Success)
-                return "Erreur : lors de la récupération des informations provenant de youtube";
+                return "Error: Could not fetch YT Content";
 
             // si plaggiat
             if((youtubeInfo.DistanceTitle + youtubeInfo.DistanceDescription) > 1.2 && (DateTime.Now - youtubeInfo.PublishedAt).TotalDays > 8)
             {
-                return "==> : Plaggiat, il n'y aura pas de vote";
+                return "**PLAGIARISM DETECTED**, there will be no vote";
             }
 
             bool alertPlaggiat = false;
@@ -158,14 +158,14 @@ namespace EmojiBot.Services
             else
                 dtubeVideoDTO.NbDownVote++;
 
-            string messagePlagiat = alertPlaggiat ? " Plaggiat?" : "";
+            string messagePlagiat = alertPlaggiat ? "*Please check for plagiarism: *" : "";
             if(dtubeVideoDTO.NbDownVote > 0 && dtubeVideoDTO.NbUpVote == 0)
-                return $"==>{messagePlagiat} Downvote à " + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString();
+                return $"{messagePlagiat} Downvote for " + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString();
             if(dtubeVideoDTO.NbUpVote > 0 && dtubeVideoDTO.NbDownVote == 0)
-                return $"==>{messagePlagiat} Vote à " + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString();
+                return $"{messagePlagiat} Vote for " + dtubeVideoDTO.VoteDateTime.ToLocalTime().ToString();
 
             _dicoVote.Remove(url);
-            return "==> Il n'y aura plus de vote/downvote car il y a désaccord.";
+            return "**Curator disagreament**. There will be no vote";
         }
 
         private Tuple<string, string> ExtractAuthorAndPermLinkFromDtubeUrl(string dtubeUrl)
