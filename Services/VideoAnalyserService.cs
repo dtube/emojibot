@@ -146,16 +146,34 @@ namespace EmojiBot.Services
             }
                 
 
-            // si plaggiat
-            if((youtubeInfo.DistanceTitle + youtubeInfo.DistanceDescription) > 1.2 && (DateTime.Now - youtubeInfo.PublishedAt).TotalDays > 8)
-            {
-                return "**PLAGIARISM DETECTED**, there will be no vote. " + youtubeInfo.VideoUrl;
+            // todo normalisation des scores
+            // pour eviter le spaghetti temporaire suivant
+
+            double scorePlagiat = 0;
+            if (steemInfo.Description.Length < 10)
+                scorePlagiat = youtubeInfo.DistanceTitle;
+            else
+                scorePlagiat = (youtubeInfo.DistanceTitle + youtubeInfo.DistanceDescription)/2;
+            double days = (DateTime.Now - youtubeInfo.PublishedAt).TotalDays;
+            double scoreTime = Math.Pow(0.5, days/3.5);
+
+            if (scorePlagiat > 0.6 && days > 7) {
+                return "**PLAGIARISM OR REPOST DETECTED ("+String.Format("{0:P0}", scorePlagiat)+")**, there will be no vote.\n" + youtubeInfo.VideoUrl;
             }
 
             // si suspection de plaggiat
-            if((youtubeInfo.DistanceTitle + youtubeInfo.DistanceDescription) > 0.6 && (DateTime.Now - youtubeInfo.PublishedAt).TotalDays > 1)
+            if (scorePlagiat > 0.6 && youtubeInfo.DistanceAuthor < 0.5)
             {
-                warnings += "\nWarning! Possible plagiarism: ";
+                warnings += "\nWarning! Plagiarism detected ("+String.Format("{0:P0}", scorePlagiat)+")"
+                    +", but the original is only "+Math.Round(days)+" days old. Check if it's the same author.\n";
+                warnings += youtubeInfo.VideoUrl;
+            } else if (scorePlagiat > 0.6)
+            {
+                warnings += "\nWarning! Looks like the same author reposting... it was reposted "+Math.Round(days)+" days later.\n";
+                warnings += youtubeInfo.VideoUrl;
+            } else if (scorePlagiat > 0.3)
+            {
+                warnings += "\nWarning! Possible plagiarism ("+String.Format("{0:P0}", scorePlagiat)+")\n";
                 warnings += youtubeInfo.VideoUrl;
             }
 
@@ -191,12 +209,12 @@ namespace EmojiBot.Services
             }
 
             if(dtubeVideoDTO.NbDownVote > 0 && dtubeVideoDTO.NbUpVote == 0)
-                return $"Downvote in " 
-                    + Math.Round(voteTimeSpan.TotalMinutes) + "mins"
+                return $"```diff\n- Downvote in " 
+                    + Math.Round(voteTimeSpan.TotalMinutes) + "mins```"
                     + warnings;
             if(dtubeVideoDTO.NbUpVote > 0 && dtubeVideoDTO.NbDownVote == 0)
-                return $"Vote in " 
-                    + Math.Round(voteTimeSpan.TotalMinutes) + "mins"
+                return $"```diff\n+ Vote in " 
+                    + Math.Round(voteTimeSpan.TotalMinutes) + "mins```"
                     + warnings;
 
             _dicoVote.Remove(url);
