@@ -60,7 +60,7 @@ namespace EmojiBot.Services
             if(!msg.Content.StartsWith("!"))
                 return;
 
-            string message = await _videoAnalyser.AnalyzeFromDiscordUserMessage(msg.Content);
+            string message = await _videoAnalyser.AnalyzeFromDiscordUserMessage(msg.Author.Username, msg.Content);
             await SendMessageAsync(message);
         }
 

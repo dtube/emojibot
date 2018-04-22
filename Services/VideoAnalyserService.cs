@@ -35,6 +35,8 @@ namespace EmojiBot.Services
 
             public DateTime VoteDateTime { get; set; }
 
+            public List<string> Curators { get; set; }
+
             public int NbUpVote { get; set; }
 
             public int NbDownVote { get; set; }
@@ -82,7 +84,7 @@ namespace EmojiBot.Services
             }
         }
 
-        public async Task<string> AnalyzeFromDiscordUserMessage(string videoMessage)
+        public async Task<string> AnalyzeFromDiscordUserMessage(string curator, string videoMessage)
         {
             if(string.IsNullOrWhiteSpace(videoMessage))
                 return "Error: Message is empty";
@@ -101,6 +103,21 @@ namespace EmojiBot.Services
                 url = videoMessage.Replace("!downvote ", string.Empty);
                 isVote = false;
                 await Console.Out.WriteLineAsync("Discord receive downvote for : " + url);
+            }
+            else if(videoMessage.StartsWith("!cancel "))
+            {
+                url = videoMessage.Replace("!cancel ", string.Empty);
+                await Console.Out.WriteLineAsync("Discord receive cancel for : " + url);
+                if (!_dicoVote.ContainsKey(url))
+                    return "Could not find any vote to cancel.";
+
+                if (_dicoVote[url].Curators.Count() > 1) {
+                    _dicoVote[url].Curators.Remove(curator);
+                    return "Ok." + _dicoVote[url].Curators.Aggregate((a, b) => a+", "+b) + " are still voting on this video.";
+                }
+                _dicoVote.Remove(url);
+                return "No more curator voting on this video, there will be no vote.";
+                
             }
             else
                 return "Error: Unknown Command";
@@ -153,8 +170,13 @@ namespace EmojiBot.Services
                 { 
                     Url = url, 
                     CreationDateTime = creationDate,
-                    VoteDateTime = voteDateTime
+                    VoteDateTime = voteDateTime,
+                    Curators = new List<string>{curator}
                 });
+            } else if (!_dicoVote[url].Curators.Contains(curator)) {
+                _dicoVote[url].Curators.Add(curator);
+            } else {
+                return "You already voted on this video.";
             }
 
             DtubeVideoDTO dtubeVideoDTO = _dicoVote[url];
@@ -163,6 +185,10 @@ namespace EmojiBot.Services
                 dtubeVideoDTO.NbUpVote++;
             else
                 dtubeVideoDTO.NbDownVote++;
+
+            if (_dicoVote[url].Curators.Count() > 1) {
+                warnings += "\nCurators: " + _dicoVote[url].Curators.Aggregate((a, b) => a+", "+b);
+            }
 
             if(dtubeVideoDTO.NbDownVote > 0 && dtubeVideoDTO.NbUpVote == 0)
                 return $"Downvote in " 
