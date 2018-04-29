@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 
-using Ditch;
+using Ditch.Steem;
 
 using EmojiBot.Managers;
 
@@ -48,7 +49,7 @@ namespace EmojiBot.Services
             var steem = new List<string>
             {
                 //"wss://steemd.steemit.com",       //ko
-                "wss://steemd.privex.io",         //ko
+                //"wss://steemd.privex.io",         //ko
                 //"wss://steemd.steemitstage.com",  //ok
                 //"wss://steemd.steemitdev.com",    //ko
                 //"wss://rpc.steemliberator.com",   //ok
@@ -56,14 +57,15 @@ namespace EmojiBot.Services
                 //"wss://rpc.buildteam.io",         //ok
                 //"wss://steemd.pevo.science",      //ok
                 //"wss://steemd.steemgigs.org",     //ko
-                //"wss://gtg.steem.house",          //ko
+                "wss://gtg.steem.house:8090",          //ko
                 //"wss://rpc.steemviz.com",         //ok
                 //"wss://seed.bitcoiner.me",        //ok
                 //"wss://steemd-int.steemit.com",     //ok
                 //"wss://",
+                //"wss://api.steemit.com"
             };
 
-            string urlSteem = _steemClient.TryConnectTo(steem);
+            string urlSteem = _steemClient.TryConnectTo(new List<string> { "https://api.steemit.com", }, CancellationToken.None);
             if(string.IsNullOrWhiteSpace(urlSteem))
                 await Console.Out.WriteLineAsync($"[SteemConnection] Unable to connecte to Steem's Gateways");
             else

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Newtonsoft.Json;
@@ -13,10 +14,11 @@ using EmojiBot.Models;
 using EmojiBot.Models.YouTube;
 using EmojiBot.Managers;
 
-using Ditch;
-using Ditch.Operations.Get;
-using Ditch.Errors;
-using Ditch.JsonRpc;
+using Ditch.Core.JsonRpc;
+using Ditch.Steem;
+using Ditch.Steem.Helpers;
+using Ditch.Steem.Models.Other;
+using Ditch.Core.Errors;
 
 namespace EmojiBot.Services
 {
@@ -67,8 +69,8 @@ namespace EmojiBot.Services
                     if(steemVideoDTO.NbUpVote > 0 && steemVideoDTO.NbDownVote == 0)
                     {
                         // TODO voter à 100%
+                        System.Diagnostics.Process.Start("node","upvote.js "+steemVideoDTO.Url.Split('/')[5]+" "+steemVideoDTO.Url.Split('/')[6]);
                         DiscordMessageService.SendMessageAsync($"[VOTE 100% {steemVideoDTO.Url}]").Wait(5000);
-
                         //_configurationManager.SteemCuratorId;
                     }
                     else if(steemVideoDTO.NbDownVote > 0 && steemVideoDTO.NbUpVote == 0)
@@ -157,21 +159,21 @@ namespace EmojiBot.Services
             double days = (DateTime.Now - youtubeInfo.PublishedAt).TotalDays;
             double scoreTime = Math.Pow(0.5, days/3.5);
 
-            if (scorePlagiat > 0.6 && days > 7) {
+            if (scorePlagiat > 0.75 && days > 7) {
                 return "**PLAGIARISM OR REPOST DETECTED ("+String.Format("{0:P0}", scorePlagiat)+")**, there will be no vote.\n" + youtubeInfo.VideoUrl;
             }
 
             // si suspection de plaggiat
-            if (scorePlagiat > 0.6 && youtubeInfo.DistanceAuthor < 0.5)
+            if (scorePlagiat > 0.75 && youtubeInfo.DistanceAuthor < 0.5)
             {
                 warnings += "\nWarning! Plagiarism detected ("+String.Format("{0:P0}", scorePlagiat)+")"
                     +", but the original is only "+Math.Round(days)+" days old. Check if it's the same author.\n";
                 warnings += youtubeInfo.VideoUrl;
-            } else if (scorePlagiat > 0.6)
+            } else if (scorePlagiat > 0.75)
             {
                 warnings += "\nWarning! Looks like the same author reposting... it was reposted "+Math.Round(days)+" days later.\n";
                 warnings += youtubeInfo.VideoUrl;
-            } else if (scorePlagiat > 0.3)
+            } else if (scorePlagiat > 0.50)
             {
                 warnings += "\nWarning! Possible plagiarism ("+String.Format("{0:P0}", scorePlagiat)+")\n";
                 warnings += youtubeInfo.VideoUrl;
@@ -254,7 +256,7 @@ namespace EmojiBot.Services
 
         private SteemDTO GetInfoFromSteem(string author, string permLink)
         {
-            JsonRpcResponse<Discussion> response = _steemClient.GetContent(author, permLink);
+            JsonRpcResponse<Discussion> response = _steemClient.GetContent(author, permLink, CancellationToken.None);
             if (response.IsError)
             {
                 ErrorInfo error = response.Error;
@@ -264,7 +266,6 @@ namespace EmojiBot.Services
             // recup info dans steem dans le champ metadata et champ video, montant estimé gagné, etc ...
             Discussion result = response.Result;
             object reputation = result.AuthorReputation;
-            Money promoted = result.Promoted;
             DtubeRoot jsonMetaData = JsonConvert.DeserializeObject<DtubeRoot>(result.JsonMetadata);
 
             if(jsonMetaData == null)
@@ -279,7 +280,7 @@ namespace EmojiBot.Services
             //Money curatorPayoutValue = result.CuratorPayoutValue;
             //object authorRewards = result.AuthorRewards;
             //Money pendingPayoutValue = result.PendingPayoutValue;
-            Money totalPayoutValue = result.TotalPayoutValue;
+            var totalPayoutValue = result.TotalPayoutValue;
 
             return new SteemDTO
             {

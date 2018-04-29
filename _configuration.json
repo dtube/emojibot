@@ -1,11 +1,11 @@
 {
-	"discord": {
-        "token": "AAA",
-        "channelIdIn": 111,
-		"channelIdOut": 222,
-		"curatorId": 333
-	},
-	"youTube": {
-		"apiKey": "BBB"
-	}
+    "discord": {
+        "token": "Mzc0MDA5MjM4MzI3OTE4NjAy.DQYltg.jSbdnF63aYSvr0J4kwcunUzaTjI",
+        "channelIdIn": 404371933258317834,
+        "channelIdOut": 404371933258317834,
+        "curatorId": 222
+    },
+    "youTube": {
+        "apiKey": "AIzaSyBp9eIqfSJfe6Oo9g7SSnWja_vELtwXUH0"
+    }
 }

@@ -9,7 +9,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 
 using Ditch;
-using Ditch.Helpers;
+using Ditch.Steem.Helpers;
 
 using Microsoft.Extensions.Configuration;
 
