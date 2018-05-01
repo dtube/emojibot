@@ -1,7 +1,7 @@
 var steem = require('steem')
 steem.api.setOptions({ url: 'https://api.steemit.com' });
 steem.broadcast.vote(
-	'your_wif_here',
+	'xxx',
 	'curator',
 	process.argv[2],
 	process.argv[3],

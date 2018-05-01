@@ -68,16 +68,12 @@ namespace EmojiBot.Services
 
                     if(steemVideoDTO.NbUpVote > 0 && steemVideoDTO.NbDownVote == 0)
                     {
-                        // TODO voter à 100%
                         System.Diagnostics.Process.Start("node","upvote.js "+steemVideoDTO.Url.Split('/')[5]+" "+steemVideoDTO.Url.Split('/')[6]);
                         DiscordMessageService.SendMessageAsync($"[VOTE 100% {steemVideoDTO.Url}]").Wait(5000);
-                        //_configurationManager.SteemCuratorId;
                     }
                     else if(steemVideoDTO.NbDownVote > 0 && steemVideoDTO.NbUpVote == 0)
                     {
-                        // TODO
-                        // calculer le % de vote à effectuer pour faire arriver à 0$ la video
-                        // par rapport à la valeur en $ de la vidéo actuelle et le % de powervote de dtube
+                        System.Diagnostics.Process.Start("node","downvote.js "+steemVideoDTO.Url.Split('/')[5]+" "+steemVideoDTO.Url.Split('/')[6]);
                         DiscordMessageService.SendMessageAsync($"[DOWNVOTE ?% {steemVideoDTO.Url}]").Wait(5000);
                     }
 
@@ -89,7 +85,7 @@ namespace EmojiBot.Services
         public async Task<string> AnalyzeFromDiscordUserMessage(string curator, string videoMessage)
         {
             if(string.IsNullOrWhiteSpace(videoMessage))
-                return "Error: Message is empty";
+                return curator + ": Error: Message is empty";
 
             string url = null;
             string warnings = "";
@@ -111,21 +107,21 @@ namespace EmojiBot.Services
                 url = videoMessage.Replace("!cancel ", string.Empty);
                 await Console.Out.WriteLineAsync("Discord receive cancel for : " + url);
                 if (!_dicoVote.ContainsKey(url))
-                    return "Could not find any vote to cancel.";
+                    return curator + ": Could not find any vote to cancel.";
 
                 if (_dicoVote[url].Curators.Count() > 1) {
                     _dicoVote[url].Curators.Remove(curator);
-                    return "Ok." + _dicoVote[url].Curators.Aggregate((a, b) => a+", "+b) + " are still voting on this video.";
+                    return "Ok, " + curator + ". " + _dicoVote[url].Curators.Aggregate((a, b) => a+", "+b) + " are still voting on this video.";
                 }
                 _dicoVote.Remove(url);
-                return "No more curator voting on this video, there will be no vote.";
+                return "No more curator voting on "+url+" , there will be no vote.";
                 
             }
             else
-                return "Error: Unknown Command";
+                return curator + ": Error: Unknown Command";
 
             if(string.IsNullOrWhiteSpace(url))
-                return "Error: No url found";
+                return curator + ": Error: No url found";
 
             Tuple<string, string> tuple = null;
             if (url.StartsWith("https://d.tube/"))
@@ -134,11 +130,11 @@ namespace EmojiBot.Services
                 tuple = ExtractAuthorAndPermLinkFromSteemitUrl(url);
             
             if(tuple == null)
-                return "Error: URL needs to start with either d.tube or steemit.com";
+                return url + "\nError: URL needs to start with either d.tube or steemit.com";
             
             SteemDTO steemInfo = GetInfoFromSteem(tuple.Item1, tuple.Item2);
             if(!steemInfo.Success)
-                return "Error: Could not fetch STEEM content";
+                return url + "\nError: Could not fetch STEEM content";
             YoutubeDTO youtubeInfo = await GetInfoFromYouTubeSearchAPI(steemInfo.Title, steemInfo.Description, steemInfo.Duration, steemInfo.Author);
             if(!youtubeInfo.Success) {
                 await Console.Out.WriteLineAsync("Error fetching YT for: " + url);
@@ -160,7 +156,7 @@ namespace EmojiBot.Services
             double scoreTime = Math.Pow(0.5, days/3.5);
 
             if (scorePlagiat > 0.75 && days > 7) {
-                return "**PLAGIARISM OR REPOST DETECTED ("+String.Format("{0:P0}", scorePlagiat)+")**, there will be no vote.\n" + youtubeInfo.VideoUrl;
+                return url + "\n**PLAGIARISM OR REPOST DETECTED ("+String.Format("{0:P0}", scorePlagiat)+")**, there will be no vote.\n" + youtubeInfo.VideoUrl;
             }
 
             // si suspection de plaggiat
@@ -196,7 +192,7 @@ namespace EmojiBot.Services
             } else if (!_dicoVote[url].Curators.Contains(curator)) {
                 _dicoVote[url].Curators.Add(curator);
             } else {
-                return "You already voted on this video.";
+                return curator+": You already voted on this video.";
             }
 
             DtubeVideoDTO dtubeVideoDTO = _dicoVote[url];
@@ -211,16 +207,16 @@ namespace EmojiBot.Services
             }
 
             if(dtubeVideoDTO.NbDownVote > 0 && dtubeVideoDTO.NbUpVote == 0)
-                return $"```diff\n- Downvote in " 
+                return dtubeVideoDTO.Url + " ```diff\n- Downvote in " 
                     + Math.Round(voteTimeSpan.TotalMinutes) + "mins```"
                     + warnings;
             if(dtubeVideoDTO.NbUpVote > 0 && dtubeVideoDTO.NbDownVote == 0)
-                return $"```diff\n+ Vote in " 
+                return dtubeVideoDTO.Url + " ```diff\n+ Vote in " 
                     + Math.Round(voteTimeSpan.TotalMinutes) + "mins```"
                     + warnings;
 
             _dicoVote.Remove(url);
-            return "**Curator disagreament**. There will be no vote";
+            return dtubeVideoDTO.Url + " **Curator disagreament**. There will be no vote";
         }
 
         private Tuple<string, string> ExtractAuthorAndPermLinkFromDtubeUrl(string dtubeUrl)
