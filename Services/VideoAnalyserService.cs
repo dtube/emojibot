@@ -216,7 +216,7 @@ namespace EmojiBot.Services
                     + warnings;
 
             _dicoVote.Remove(url);
-            return dtubeVideoDTO.Url + " **Curator disagreament**. There will be no vote";
+            return dtubeVideoDTO.Url + "\n**Curator disagreament**. There will be no vote";
         }
 
         private Tuple<string, string> ExtractAuthorAndPermLinkFromDtubeUrl(string dtubeUrl)
