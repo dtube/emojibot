@@ -189,7 +189,7 @@ namespace EmojiBot.Services
 
             if(!_dicoVote.ContainsKey(url))
             {
-                DateTime afterVote = DateTime.UtcNow.AddMinutes(5);
+                DateTime afterVote = DateTime.UtcNow.AddMinutes(15);
                 DateTime afterCreationVideo = creationDate.AddMinutes(30);
                 DateTime voteDateTime = afterCreationVideo > afterVote && isVote ? afterCreationVideo : afterVote; //on prend le max des 2
                 _dicoVote.Add(url, new DtubeVideoDTO
