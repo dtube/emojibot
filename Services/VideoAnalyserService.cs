@@ -144,7 +144,7 @@ namespace EmojiBot.Services
             if(!steemInfo.Success)
                 return url + "\nError: Could not fetch STEEM content";
             if (steemInfo.DTubeVoted)
-                return url + "\bError: We already voted on this video";
+                return url + "\nError: We already voted on this video";
             YoutubeDTO youtubeInfo = await GetInfoFromYouTubeSearchAPI(steemInfo.Title, steemInfo.Description, steemInfo.Duration, steemInfo.Author);
             if(!youtubeInfo.Success) {
                 await Console.Out.WriteLineAsync("Error fetching YT for: " + url);
