@@ -8,6 +8,7 @@ steem.api.getAccounts(['dtube', process.argv[2]], function(err, res) {
 			// todo logic calculate voteWeight
 			var curators = process.argv[4].split(',')
 			var voteWeight = baseVoteWeight*curators.length
+			if (voteWeight > 10000) voteWeight = 10000
 			steem.broadcast.vote(
 				'xxx',
 				'curator',

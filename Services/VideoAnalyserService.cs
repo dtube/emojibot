@@ -73,7 +73,7 @@ namespace EmojiBot.Services
                             +steemVideoDTO.Url.Split('/')[5]
                             +" "+steemVideoDTO.Url.Split('/')[6]
                             +" "+String.Join(',', steemVideoDTO.Curators));
-                        DiscordMessageService.SendMessageAsync($"[VOTE 100% {steemVideoDTO.Url}]").Wait(5000);
+                        DiscordMessageService.SendMessageAsync($"**Voted {steemVideoDTO.Url}**").Wait(5000);
                     }
                     else if(steemVideoDTO.NbDownVote > 0 && steemVideoDTO.NbUpVote == 0)
                     {
@@ -82,7 +82,7 @@ namespace EmojiBot.Services
                             +steemVideoDTO.Url.Split('/')[5]
                             +" "+steemVideoDTO.Url.Split('/')[6]
                             +" "+String.Join(',', steemVideoDTO.Curators));
-                        DiscordMessageService.SendMessageAsync($"[DOWNVOTE ?% {steemVideoDTO.Url}]").Wait(5000);
+                        DiscordMessageService.SendMessageAsync($"**Downvoted {steemVideoDTO.Url}**").Wait(5000);
                     }
 
                     _dicoVote.Remove(kvp.Key);
