@@ -68,12 +68,20 @@ namespace EmojiBot.Services
 
                     if(steemVideoDTO.NbUpVote > 0 && steemVideoDTO.NbDownVote == 0)
                     {
-                        System.Diagnostics.Process.Start("node","upvote.js "+steemVideoDTO.Url.Split('/')[5]+" "+steemVideoDTO.Url.Split('/')[6]);
+                        System.Diagnostics.Process.Start("node",
+                            "upvote.js "
+                            +steemVideoDTO.Url.Split('/')[5]
+                            +" "+steemVideoDTO.Url.Split('/')[6]
+                            +" "+String.Join(',', steemVideoDTO.Curators));
                         DiscordMessageService.SendMessageAsync($"[VOTE 100% {steemVideoDTO.Url}]").Wait(5000);
                     }
                     else if(steemVideoDTO.NbDownVote > 0 && steemVideoDTO.NbUpVote == 0)
                     {
-                        System.Diagnostics.Process.Start("node","downvote.js "+steemVideoDTO.Url.Split('/')[5]+" "+steemVideoDTO.Url.Split('/')[6]);
+                        System.Diagnostics.Process.Start("node",
+                            "downvote.js "
+                            +steemVideoDTO.Url.Split('/')[5]
+                            +" "+steemVideoDTO.Url.Split('/')[6]
+                            +" "+String.Join(',', steemVideoDTO.Curators));
                         DiscordMessageService.SendMessageAsync($"[DOWNVOTE ?% {steemVideoDTO.Url}]").Wait(5000);
                     }
 
@@ -135,6 +143,8 @@ namespace EmojiBot.Services
             SteemDTO steemInfo = GetInfoFromSteem(tuple.Item1, tuple.Item2);
             if(!steemInfo.Success)
                 return url + "\nError: Could not fetch STEEM content";
+            if (steemInfo.DTubeVoted)
+                return url + "\bError: We already voted on this video";
             YoutubeDTO youtubeInfo = await GetInfoFromYouTubeSearchAPI(steemInfo.Title, steemInfo.Description, steemInfo.Duration, steemInfo.Author);
             if(!youtubeInfo.Success) {
                 await Console.Out.WriteLineAsync("Error fetching YT for: " + url);
@@ -262,6 +272,11 @@ namespace EmojiBot.Services
             // recup info dans steem dans le champ metadata et champ video, montant estimé gagné, etc ...
             Discussion result = response.Result;
             object reputation = result.AuthorReputation;
+            bool hasDTubeVoted = false;
+            foreach (VoteState vote in result.ActiveVotes)
+                if (vote.Voter == "dtube")
+                    hasDTubeVoted = true;
+
             DtubeRoot jsonMetaData = JsonConvert.DeserializeObject<DtubeRoot>(result.JsonMetadata);
 
             if(jsonMetaData == null)
@@ -287,7 +302,8 @@ namespace EmojiBot.Services
                 Duration = steemDuration,
                 Author = author,
                 PermLink = permLink,
-                TotalPayout = totalPayoutValue.Value
+                TotalPayout = totalPayoutValue.Value,
+                DTubeVoted = hasDTubeVoted
             };
         }
 
@@ -314,6 +330,8 @@ namespace EmojiBot.Services
             public long TotalPayout { get; set; }
 
             public string ErrorMessage { get; set; }
+
+            public bool DTubeVoted { get; set; }
 
             public string GetScoreInfo()
             {
