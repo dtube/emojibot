@@ -1,4 +1,4 @@
-var baseVoteWeight = 2500
+var baseVoteWeight = 2000
 var malusPerVote = 1 / Math.pow(2, 1/7) // 7 votes a week divides vote weight by 2
 var steem = require('steem')
 steem.api.setOptions({ url: 'https://api.steemit.com' })
