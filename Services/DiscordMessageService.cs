@@ -57,11 +57,12 @@ namespace EmojiBot.Services
             if(msg.Channel.Id != _configurationManager.DiscordChannelIdIn || msg.Author.IsBot)
                 return;
 
-            if(!msg.Content.StartsWith("!"))
-                return;
+            // if(!msg.Content.StartsWith("!"))
+            //     return;
 
             string message = await _videoAnalyser.AnalyzeFromDiscordUserMessage(msg.Author.Username, msg.Content);
-            await SendMessageAsync(message);
+            if (message != null)
+                await SendMessageAsync(message);
         }
 
         public static async Task SendMessageAsync(string message)

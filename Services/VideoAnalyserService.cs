@@ -92,63 +92,71 @@ namespace EmojiBot.Services
 
         public async Task<string> AnalyzeFromDiscordUserMessage(string curator, string videoMessage)
         {
-            if(string.IsNullOrWhiteSpace(videoMessage))
-                return curator + ": Error: Message is empty";
+            // if(string.IsNullOrWhiteSpace(videoMessage))
+            //     return curator + ": Error: Message is empty";
 
             string url = null;
             string warnings = "";
-            bool isVote = false;
-            if(videoMessage.StartsWith("!vote "))
-            {
-                url = videoMessage.Replace("!vote ", string.Empty);
-                isVote = true;
-                await Console.Out.WriteLineAsync("Discord receive vote for : " + url);
-            }
-            else if(videoMessage.StartsWith("!downvote "))
-            {
-                url = videoMessage.Replace("!downvote ", string.Empty);
-                isVote = false;
-                await Console.Out.WriteLineAsync("Discord receive downvote for : " + url);
-            }
-            else if(videoMessage.StartsWith("!cancel "))
-            {
-                url = videoMessage.Replace("!cancel ", string.Empty);
-                await Console.Out.WriteLineAsync("Discord receive cancel for : " + url);
-                if (!_dicoVote.ContainsKey(url))
-                    return curator + ": Could not find any vote to cancel.";
+            // bool isVote = false;
+            // if(videoMessage.StartsWith("!vote "))
+            // {
+            //     url = videoMessage.Replace("!vote ", string.Empty);
+            //     isVote = true;
+            //     await Console.Out.WriteLineAsync("Discord receive vote for : " + url);
+            // }
+            // else if(videoMessage.StartsWith("!downvote "))
+            // {
+            //     url = videoMessage.Replace("!downvote ", string.Empty);
+            //     isVote = false;
+            //     await Console.Out.WriteLineAsync("Discord receive downvote for : " + url);
+            // }
+            // else if(videoMessage.StartsWith("!cancel "))
+            // {
+            //     url = videoMessage.Replace("!cancel ", string.Empty);
+            //     await Console.Out.WriteLineAsync("Discord receive cancel for : " + url);
+            //     if (!_dicoVote.ContainsKey(url))
+            //         return curator + ": Could not find any vote to cancel.";
 
-                if (_dicoVote[url].Curators.Count() > 1) {
-                    _dicoVote[url].Curators.Remove(curator);
-                    return "Ok, " + curator + ". " + _dicoVote[url].Curators.Aggregate((a, b) => a+", "+b) + " are still voting on this video.";
-                }
-                _dicoVote.Remove(url);
-                return "No more curator voting on "+url+" , there will be no vote.";
+            //     if (_dicoVote[url].Curators.Count() > 1) {
+            //         _dicoVote[url].Curators.Remove(curator);
+            //         return "Ok, " + curator + ". " + _dicoVote[url].Curators.Aggregate((a, b) => a+", "+b) + " are still voting on this video.";
+            //     }
+            //     _dicoVote.Remove(url);
+            //     return "No more curator voting on "+url+" , there will be no vote.";
                 
-            }
-            else
-                return curator + ": Error: Unknown Command";
+            // }
+            // else
+            //     return curator + ": Error: Unknown Command";
 
-            if(string.IsNullOrWhiteSpace(url))
-                return curator + ": Error: No url found";
+            // if(string.IsNullOrWhiteSpace(url))
+            //     return curator + ": Error: No url found";
+
+            string[] words = videoMessage.Split(' ');
+            for (int i = 0; i < words.Length; i++)
+            {
+                if (words[i].StartsWith("https://d.tube/")) {
+                    url = words[i];
+                    break;
+                }
+            }
+
+            if (url == null) {
+                return null;
+            }
 
             Tuple<string, string> tuple = null;
             if (url.StartsWith("https://d.tube/"))
                 tuple = ExtractAuthorAndPermLinkFromDtubeUrl(url);
-            else if(url.StartsWith("https://steemit.com/"))
-                tuple = ExtractAuthorAndPermLinkFromSteemitUrl(url);
-            
-            if(tuple == null)
-                return url + "\nError: URL needs to start with either d.tube or steemit.com";
             
             SteemDTO steemInfo = GetInfoFromSteem(tuple.Item1, tuple.Item2);
             if(!steemInfo.Success)
                 return url + "\nError: Could not fetch STEEM content";
-            if (steemInfo.DTubeVoted)
-                return url + "\nError: We already voted on this video";
+            // if (steemInfo.DTubeVoted)
+            //     return url + "\nError: We already voted on this video";
             YoutubeDTO youtubeInfo = await GetInfoFromYouTubeSearchAPI(steemInfo.Title, steemInfo.Description, steemInfo.Duration, steemInfo.Author);
             if(!youtubeInfo.Success) {
                 await Console.Out.WriteLineAsync("Error fetching YT for: " + url);
-                warnings += "\nWarning! YT error";
+                warnings += "\nWarning! YT error. Please check manually";
                 //return "Error: Could not fetch YT Content";
                 //je prefere que ca ne bloque pas dans ce cas, je met un systeme de warning
             }
@@ -166,67 +174,69 @@ namespace EmojiBot.Services
             double scoreTime = Math.Pow(0.5, days/3.5);
 
             if (scorePlagiat > 0.75 && days > 7) {
-                return url + "\n**PLAGIARISM OR REPOST DETECTED ("+String.Format("{0:P0}", scorePlagiat)+")**, there will be no vote.\n" + youtubeInfo.VideoUrl;
+                return "**PLAGIARISM OR REPOST DETECTED ("+String.Format("{0:P0}", scorePlagiat)+"):** <" + youtubeInfo.VideoUrl + ">";
             }
 
             // si suspection de plaggiat
             if (scorePlagiat > 0.75 && youtubeInfo.DistanceAuthor < 0.5)
             {
-                warnings += "\nWarning! Plagiarism detected ("+String.Format("{0:P0}", scorePlagiat)+")"
-                    +", but the original is only "+Math.Round(days)+" days old. Check if it's the same author.\n";
-                warnings += youtubeInfo.VideoUrl;
+                warnings += "Plagiarism detected ("+String.Format("{0:P0}", scorePlagiat)+")"
+                    +", but the original is only "+Math.Round(days)+" days old. Check if it's the same author. ";
+                warnings += "<"+youtubeInfo.VideoUrl+">";
             } else if (scorePlagiat > 0.75)
             {
-                warnings += "\nWarning! Looks like the same author reposting... it was reposted "+Math.Round(days)+" days later.\n";
-                warnings += youtubeInfo.VideoUrl;
+                warnings += "Looks like the same author reposting... it was reposted "+Math.Round(days)+" days later. ";
+                warnings += "<"+youtubeInfo.VideoUrl+">";
             } else if (scorePlagiat > 0.50)
             {
-                warnings += "\nWarning! Possible plagiarism ("+String.Format("{0:P0}", scorePlagiat)+")\n";
-                warnings += youtubeInfo.VideoUrl;
+                warnings += "Possible plagiarism ("+String.Format("{0:P0}", scorePlagiat)+") ";
+                warnings += "<"+youtubeInfo.VideoUrl+">";
             }
 
-            DateTime creationDate = DateTime.SpecifyKind(steemInfo.Created, DateTimeKind.Utc);
+            return warnings;
 
-            if(!_dicoVote.ContainsKey(url))
-            {
-                DateTime afterVote = DateTime.UtcNow.AddMinutes(15);
-                DateTime afterCreationVideo = creationDate.AddMinutes(30);
-                DateTime voteDateTime = afterCreationVideo > afterVote && isVote ? afterCreationVideo : afterVote; //on prend le max des 2
-                _dicoVote.Add(url, new DtubeVideoDTO
-                { 
-                    Url = url, 
-                    CreationDateTime = creationDate,
-                    VoteDateTime = voteDateTime,
-                    Curators = new List<string>{curator}
-                });
-            } else if (!_dicoVote[url].Curators.Contains(curator)) {
-                _dicoVote[url].Curators.Add(curator);
-            } else {
-                return curator+": You already voted on this video.";
-            }
+            // DateTime creationDate = DateTime.SpecifyKind(steemInfo.Created, DateTimeKind.Utc);
 
-            DtubeVideoDTO dtubeVideoDTO = _dicoVote[url];
-            TimeSpan voteTimeSpan = (dtubeVideoDTO.VoteDateTime - DateTime.Now.ToUniversalTime());
-            if(isVote)
-                dtubeVideoDTO.NbUpVote++;
-            else
-                dtubeVideoDTO.NbDownVote++;
+            // if(!_dicoVote.ContainsKey(url))
+            // {
+            //     DateTime afterVote = DateTime.UtcNow.AddMinutes(15);
+            //     DateTime afterCreationVideo = creationDate.AddMinutes(30);
+            //     DateTime voteDateTime = afterCreationVideo > afterVote && isVote ? afterCreationVideo : afterVote; //on prend le max des 2
+            //     _dicoVote.Add(url, new DtubeVideoDTO
+            //     { 
+            //         Url = url, 
+            //         CreationDateTime = creationDate,
+            //         VoteDateTime = voteDateTime,
+            //         Curators = new List<string>{curator}
+            //     });
+            // } else if (!_dicoVote[url].Curators.Contains(curator)) {
+            //     _dicoVote[url].Curators.Add(curator);
+            // } else {
+            //     return curator+": You already voted on this video.";
+            // }
 
-            if (_dicoVote[url].Curators.Count() > 1) {
-                warnings += "\nCurators: " + _dicoVote[url].Curators.Aggregate((a, b) => a+", "+b);
-            }
+            // DtubeVideoDTO dtubeVideoDTO = _dicoVote[url];
+            // TimeSpan voteTimeSpan = (dtubeVideoDTO.VoteDateTime - DateTime.Now.ToUniversalTime());
+            // if(isVote)
+            //     dtubeVideoDTO.NbUpVote++;
+            // else
+            //     dtubeVideoDTO.NbDownVote++;
 
-            if(dtubeVideoDTO.NbDownVote > 0 && dtubeVideoDTO.NbUpVote == 0)
-                return dtubeVideoDTO.Url + " ```diff\n- Downvote in " 
-                    + Math.Round(voteTimeSpan.TotalMinutes) + "mins```"
-                    + warnings;
-            if(dtubeVideoDTO.NbUpVote > 0 && dtubeVideoDTO.NbDownVote == 0)
-                return dtubeVideoDTO.Url + " ```diff\n+ Vote in " 
-                    + Math.Round(voteTimeSpan.TotalMinutes) + "mins```"
-                    + warnings;
+            // if (_dicoVote[url].Curators.Count() > 1) {
+            //     warnings += "\nCurators: " + _dicoVote[url].Curators.Aggregate((a, b) => a+", "+b);
+            // }
 
-            _dicoVote.Remove(url);
-            return dtubeVideoDTO.Url + "\n**Curator disagreament**. There will be no vote";
+            // if(dtubeVideoDTO.NbDownVote > 0 && dtubeVideoDTO.NbUpVote == 0)
+            //     return dtubeVideoDTO.Url + " ```diff\n- Downvote in " 
+            //         + Math.Round(voteTimeSpan.TotalMinutes) + "mins```"
+            //         + warnings;
+            // if(dtubeVideoDTO.NbUpVote > 0 && dtubeVideoDTO.NbDownVote == 0)
+            //     return dtubeVideoDTO.Url + " ```diff\n+ Vote in " 
+            //         + Math.Round(voteTimeSpan.TotalMinutes) + "mins```"
+            //         + warnings;
+
+            // _dicoVote.Remove(url);
+            // return dtubeVideoDTO.Url + "\n**Curator disagreament**. There will be no vote";
         }
 
         private Tuple<string, string> ExtractAuthorAndPermLinkFromDtubeUrl(string dtubeUrl)
